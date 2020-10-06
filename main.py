@@ -76,7 +76,6 @@ def gen_content():
 
         for row in pages_reader:
             # Flags to set for each page
-            above_featured = False
             title = None
 
             # Ignore header row
@@ -144,6 +143,8 @@ def gen_content():
             page_content['id'] = page_id[:-1]
             result += str(page_content)
 
+            # This is the old way that I used to grab the content above the
+            # "Featured Courses" header
             """
             if above_featured:
 
@@ -163,5 +164,4 @@ def gen_content():
 
 with open("output.html", "a") as output:
     output.write(generate_toc(2019, 2020))
-
     output.write(gen_content())
