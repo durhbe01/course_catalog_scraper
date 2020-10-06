@@ -1,12 +1,22 @@
+# %%
+
 import csv
 import urllib.request
 import urllib.parse
 import re
 from bs4 import BeautifulSoup
 
+# %%
+
+
 with open('pages.csv') as pageList:
   listReader = csv.reader(pageList, delimiter=',')
   f = open("output.html", "a")
+  
+  # This variable test with the first idid number of rows in the csv file. Uncomment to test
+  # idid = 5
+  
+  
   for row in listReader:
     # Flags to set for each page
     above_featured = False
@@ -65,7 +75,13 @@ with open('pages.csv') as pageList:
 
     try:
       columns = content.find_all('div', {'class': 'column'})
+
+      for svg_item in content.find_all('svg'):
+        svg_item.decompose()
+
       test = columns[1]
+
+    ## BUG: When index error is catched, there are type errors in the exception code.
     except IndexError:
       # Handle the case when the columns are not all divs
       print("index")
@@ -82,4 +98,10 @@ with open('pages.csv') as pageList:
       f.write(str(columns[1]))
       #except IndexError:
       #  print(str(columns))
+
+    # Test with the first idid number of rows in the csv file. Uncomment to test
+    # idid -= 1
+    # if idid < 0:
+    #   break
   f.close()
+  print("Done!")
