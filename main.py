@@ -15,11 +15,14 @@ def gen_dept(name, link):
     result += gen_link(f'<h4>Courses</h4>', f'{link}/courses')
     return result
 
-
 def gen_link(text, link):
-    return f'<a href="{local_link_from_relative(link)}">{text}</a>'
+    query = ""
+    if "?id=" in link:
+      query = link.split('?')[1][3:]
+      link = link.split('?')[0]
+    return f'<a href="{local_link_from_relative(link, query=query)}">{text}</a>'
 
-def local_link_from_relative(link):
+def local_link_from_relative(link, query=""):
     # Remove Leading "/"
     link = link[1:]
 
@@ -28,8 +31,16 @@ def local_link_from_relative(link):
         link = link[:-1]
 
     # Replace forward slashes with hyphens and prepend hash sign
-    link = f'#{link.replace("/", "-")}'
+    if query != "":
+      link = f'#{link.replace("/", "-")}-{translate_url_query(query)}'
+    else:
+      link = f'#{link.replace("/", "-")}'
     return link
+
+def translate_url_query(query):
+  if query != "":
+    return query.replace('&', '-').replace('+', '-')
+  return ""
 
 def generate_toc(year1, year2):
     result = ""
@@ -101,6 +112,7 @@ def gen_content():
             url_path = urllib.parse.urlparse(row[0]).path
             id_prefix = url_path[1:].replace('/', '-')
             page_id = id_prefix
+            page_query = urllib.parse.urlparse(row[0]).query
 
             content = soup.find('div', {'id': 'content'})
 
@@ -110,9 +122,10 @@ def gen_content():
                 if link.has_key('href'):
                     # Change relative links to id-based links
                     if link['href'][0] == "/":
-                        link_url_path = urllib.parse.urlparse(
-                            link['href']).path
-                        link['href'] = local_link_from_relative(link_url_path)
+                        link_url = urllib.parse.urlparse(link['href'])
+                        link_url_path = link_url.path
+                        link_url_query = link_url.query
+                        link['href'] = local_link_from_relative(link_url_path, link_url_query)
                     # Change existing skip links to new links with prefix based
                     # what page they are from
                     elif link['href'][0] == "#":
@@ -139,8 +152,13 @@ def gen_content():
                 # Handle the case when the columns are not all divs
                 page_content = content.find('main', {'class', 'column'})
 
+
             # Add an id to the content to allow skip linking to it
-            page_content['id'] = page_id[:-1]
+            if page_query != "":
+              page_content['id'] = page_id + '-' + translate_url_query(page_query)[3:]
+              print(page_content['id'])
+            else:
+              page_content['id'] = page_id[:-1]
             result += str(page_content)
 
             # This is the old way that I used to grab the content above the
