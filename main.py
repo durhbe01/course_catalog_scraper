@@ -8,11 +8,18 @@ from bs4 import BeautifulSoup
 gbc_link = "https://www.gettysburg.edu"
 
 def gen_dept(name, link):
-    result = ""
-    result += f'<h3>{name}</h3>'
-    result += gen_link(f'<h4>Program Description</h4>', link)
-    result += gen_link(f'<h4>Program Requirements</h4>', f'{link}/major-minor')
-    result += gen_link(f'<h4>Courses</h4>', f'{link}/courses')
+    result = f'<li>{name}'
+    result += '<ul>'
+    result += '<li>'
+    result += gen_link('Program Description', link)
+    result += '</li>'
+    result += '<li>'
+    result += gen_link('Program Requirements', f'{link}/major-minor')
+    result += '</li>'
+    result += '<li>'
+    result += gen_link('Courses', f'{link}/courses')
+    result += '</li>'
+    result += '</ul></li>'
     return result
 
 def gen_link(text, link):
@@ -47,14 +54,17 @@ def generate_toc(year1, year2):
 
     # Top Headings (Title, Date, Link to GBC Website)
     heading = f'<h1>{year1}-{year2} Course Catalog</h1>'
-    college_link = f'<a href="{gbc_link}">Gettysburg College</a>'
+    college_link = f'<p><a href="{gbc_link}">Gettysburg College</a></p>'
     mdy_date = date.today().strftime("%m/%d/%Y")
     catalog_link = f'<p><a href="{gbc_link}/academic-programs/curriculum/catalog">Catalog</a> generated on {mdy_date}</p>'
     result += heading + college_link + catalog_link
 
+    result += '<h2 id="toc">Contents</h2>'
+
     # Context manager for table of contents csv
     with open("toc.csv") as toc_csv:
         toc_reader = csv.reader(toc_csv, delimiter=',')
+        past_first_row = False
         for row in toc_reader:
             # Check for content in columns
             level2_header_present = row[0] != ""
@@ -63,17 +73,23 @@ def generate_toc(year1, year2):
 
             # Skip first row
             if row[0] == "Level 2 Heading":
+                result += "<ol>"
                 continue
 
             # Carry out department specific behavior (Program + Course subheadings)
+
+            if level2_header_present:
+                if past_first_row:
+                  result += "</ol></li>"
+                result += "<li>"
+                result += gen_link(f'{row[0]}', row[5])
+                result += "<ol>"
+                past_first_row = True
             if is_dept_row:
                 result += gen_dept(row[1], row[5])
                 continue
-
             if level3_header_present:
-                result += gen_link(f'<h3>{row[1]}</h3>', row[5])
-            elif level2_header_present:
-                result += gen_link(f'<h2>{row[0]}</h2>', row[5])
+                result += gen_link(f'<li>{row[1]}</li>', row[5])
     return result
 
 def gen_content():
@@ -83,7 +99,7 @@ def gen_content():
         pages_reader = csv.reader(page_list, delimiter=',')
 
         # Uncomment to test
-        # rows_to_test = 20
+        #rows_to_test = 60
 
         for row in pages_reader:
             # Flags to set for each page
@@ -119,7 +135,7 @@ def gen_content():
             # Find + correct links
             all_links = content.find_all('a')
             for link in all_links:
-                if link.has_key('href'):
+                if link.has_attr('href'):
                     # Change relative links to id-based links
                     if link['href'][0] == "/":
                         link_url = urllib.parse.urlparse(link['href'])
@@ -174,9 +190,9 @@ def gen_content():
                 """
 
             # Uncomment to test with the first rows_to_test rows in the csv file
-            # rows_to_test -= 1
-            # if rows_to_test < 0:
-            #    break
+            #rows_to_test -= 1
+            #if rows_to_test < 0:
+            #   break
     return result
 
 
